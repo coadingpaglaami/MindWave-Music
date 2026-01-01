@@ -124,8 +124,12 @@ export const SideBaar = () => {
           );
         })}
       </div>
-      <div className="flex justify-between gap-2 lg:px-4 px-2 py-1.5 rounded-lg bg-[#623C35]">
-        <div className="flex items-center gap-2.5 text-white ">
+      <div
+        className={`flex justify-between gap-2 lg:px-4 px-2 py-1.5 rounded-lg bg-[#623C35] ${
+          pathname === "/profile" ? "bg-primary" : ""
+        }`}
+      >
+        <div className={`flex items-center gap-2.5 text-white cursor-pointer `}>
           <User2 className="" />
           <span>Admin Profile</span>
         </div>
@@ -140,18 +144,14 @@ export const SideBaar = () => {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            {dropDownData.map(
-              (item: {
-                label: string;
-                href?: string;
-                onChange?: () => void;
-              }) => (
+            {dropDownData.map((item) =>
+              item.href ? (
+                <DropdownMenuItem key={item.label} asChild>
+                  <Link href={item.href}>{item.label}</Link>
+                </DropdownMenuItem>
+              ) : (
                 <DropdownMenuItem key={item.label} onSelect={item.onChange}>
-                  {item.href ? (
-                    <Link href={item.href}>{item.label}</Link>
-                  ) : (
-                    item.label
-                  )}
+                  {item.label}
                 </DropdownMenuItem>
               )
             )}

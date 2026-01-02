@@ -110,12 +110,15 @@ export const SubscriptionsPayments = () => {
         </Select>
       </div>
       <SubscriptionTable search={search} statusFilter={subscriptionType} />
-      <SearchBar
-        className="w-full"
-        value={transactionSearch}
-        placeholder={"Search Transactions..."}
-        onChange={setTransactionSearch}
-      />
+      <div className="flex flex-col md:flex-row gap-3 md:items-center">
+        <span className="">Recent Transaction</span>
+        <SearchBar
+          className="flex-1"
+          value={transactionSearch}
+          placeholder={"Search Transactions..."}
+          onChange={setTransactionSearch}
+        />
+      </div>
       <TransactionTable search={transactionSearch} />
     </div>
   );

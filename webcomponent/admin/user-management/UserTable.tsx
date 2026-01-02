@@ -1,6 +1,6 @@
 import { Heading, Pagination } from "@/webcomponent/reusable";
-import {  generatedUserData as userData } from "./data";
-import { Ban, Calendar, CheckCircle, Crown, TrendingUp } from "lucide-react";
+import { generatedUserData as userData } from "./data";
+import { Ban, Calendar, CheckCircle, Crown, Eye, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -62,9 +62,6 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
       .toUpperCase();
   };
 
-  //   const handleViewDetails = (user: UserData) => {
-  //     console.log("View details for:", user);
-  //   };
   const maxVal = 200;
   const getWidth = (val: number) => `${(val / maxVal) * 100}%`;
 
@@ -74,7 +71,7 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
         <Table className="overflow-x-auto">
           <TableHeader style={{ backgroundColor: "#E8DED04D" }}>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="text-[#6D4C41] font-medium">User</TableHead>
+              <TableHead className="text-[#6D4C41] font-medium " >User</TableHead>
               <TableHead className="text-[#6D4C41] font-medium">
                 Email
               </TableHead>
@@ -90,10 +87,10 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
               <TableHead className="text-[#6D4C41] font-medium">
                 Join Date
               </TableHead>
-              <TableHead className="text-[#6D4C41] font-medium">
+              <TableHead className="text-[#6D4C41] font-medium ">
                 Status
               </TableHead>
-              <TableHead className="text-[#6D4C41] font-medium text-right">
+              <TableHead className="text-[#6D4C41] font-medium text-left">
                 Actions
               </TableHead>
             </TableRow>
@@ -152,10 +149,11 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
                         // onClick={() => handleViewDetails(user)}
+                        aria-label={`View details for ${user.name}`}
+                        className="float-left"
                       >
-                        View Details
+                        Viw Details
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">

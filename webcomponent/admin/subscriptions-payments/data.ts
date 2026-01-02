@@ -1,6 +1,7 @@
 /* =======================
    Interfaces
 ======================= */
+import { v4 as uuidv4 } from "uuid";
 
 export interface Subscription {
   id: string;
@@ -148,7 +149,7 @@ export function generatePermutedData<T extends WithId>(
 
     return {
       ...(item as T),
-      id: `${idPrefix}-${crypto.randomUUID()}`,
+      id: `${idPrefix}-${uuidv4()}`,
     };
   });
 }

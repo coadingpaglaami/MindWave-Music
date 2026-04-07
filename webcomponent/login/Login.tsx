@@ -1,11 +1,32 @@
-import * as React from "react";
-import { Mail, Lock } from "lucide-react";
+"use client";
+import { Mail, Lock, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { useLoginMutation } from "@/api/auth";
+import { setTokens } from "@/lib/cookies";
+import { useRouter } from "next/navigation";
 export const Login = () => {
+  const { mutate: loginMutation, isPending } = useLoginMutation();
+  const { push } = useRouter();
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    console.log(email, password);
+    loginMutation(
+      { email, password },
+      {
+        onSuccess: (data) => {
+          setTokens(data.data.access, data.data.refresh);
+          push("/admin");
+        },
+      },
+    );
+  };
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-linear-to-br from-[#FFE9C0] via-[#FFFAD8] to-[#FFE6A3] relative">
       {/* Logo & Title */}
@@ -38,7 +59,7 @@ export const Login = () => {
             <p className="text-gray-600 mt-2">Sign in to your admin account</p>
           </div>
 
-          <form className="space-y-6">
+          <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <Label htmlFor="email" className="text-[#DE7600] font-medium">
                 Email Address
@@ -48,9 +69,9 @@ export const Login = () => {
                 <Input
                   id="email"
                   type="email"
+                  name="email"
                   placeholder="admin@clinic.com"
                   className="pl-11 bg-gray-50 border-gray-200 focus:border-[#DE7600]"
-                  defaultValue="admin@clinic.com"
                 />
               </div>
             </div>
@@ -64,6 +85,7 @@ export const Login = () => {
                 <Input
                   id="password"
                   type="password"
+                  name="password"
                   placeholder="Enter your password"
                   className="pl-11 bg-gray-50 border-gray-200 focus:border-[#DE7600]"
                 />
@@ -72,9 +94,10 @@ export const Login = () => {
 
             <Button
               type="submit"
+              disabled={isPending}
               className="w-full h-12 text-white font-medium text-lg shadow-lg bg-linear-to-r from-[#FF952B] to-[#FF4D46] hover:from-[#FF8000] hover:to-[#FF3838] transition-all duration-300"
             >
-              Sign In
+              {isPending ? <Loader2 className="animate-spin" /> : "Sign In"}
             </Button>
           </form>
         </div>

@@ -1,8 +1,31 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export default function proxy(req:NextRequest){
-    if(req.nextUrl.pathname==='/')
-        return Response.redirect(new URL('/admin',req.url));
-    if(req.nextUrl.pathname === '/content')
-        return Response.redirect(new URL('/content/meditations',req.url));
+const PUBLIC_ROUTES = ["/login"];
+
+export default function proxy(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  const token = req.cookies.get("accessToken")?.value;
+
+  if (
+    pathname.startsWith("/media") ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/favicon") ||
+    pathname.includes(".")
+  )
+    return NextResponse.next();
+  const isPublicRoute = PUBLIC_ROUTES.some((route) =>
+    pathname.startsWith(route),
+  );
+
+  if (!token && !isPublicRoute)
+    return NextResponse.redirect(new URL("/login", req.url));
+
+  if (token && isPublicRoute) return NextResponse.redirect(new URL("/admin"));
+  return NextResponse.next();
 }
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+};

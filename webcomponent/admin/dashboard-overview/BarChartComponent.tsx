@@ -1,18 +1,10 @@
 'use client';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DauWeeklyItem } from "@/typesorinterface/dashboard";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-const dailyActiveUsersData = [
-  { day: "Sunday", users: 4800 },
-  { day: "Monday", users: 3200 },
-  { day: "Tuesday", users: 3800 },
-  { day: "Wednesday", users: 1800 },
-  { day: "Thursday", users: 5200 },
-  { day: "Friday", users: 4000 },
-  { day: "Saturday", users: 4600 },
-];
 
-export const BarChartComponent = () => {
+export const BarChartComponent = ({ dailyActiveUsersData }: { dailyActiveUsersData: DauWeeklyItem[] }) => {
 
     return (
         <>
@@ -26,7 +18,7 @@ export const BarChartComponent = () => {
               <XAxis dataKey="day" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="users" fill="#D4915D" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="active_users" fill="#D4915D" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>

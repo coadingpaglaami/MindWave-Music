@@ -4,7 +4,7 @@ export const getAccessToken = (): string | undefined =>
 export const getRefreshToken = (): string | undefined =>
   getCookie("refreshToken");
 
-export const setTokens = (access: string, refresh: string): void => {
+export const setTokens = (access: string, refresh?: string): void => {
   setCookie("accessToken", access, { secure: false });
   setCookie("refreshToken", refresh, { secure: false });
 };

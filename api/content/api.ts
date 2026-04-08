@@ -67,6 +67,10 @@ export const editAudioMeditation = async (
   return data;
 };
 
+export const deleteAudioMeditation = async (id: number) => {
+  await axios.delete(`${path}meditations/${id}/`);
+};
+
 export const getMeditationSummary =
   async (): Promise<MeditationSummaryResponse> => {
     const { data } = await axios.get(`${path}meditations/summary_stats/`);
@@ -122,6 +126,10 @@ export const editMusic = async (id: number, payload: CreateAudioPayload) => {
   return data;
 };
 
+export const deleteMusic = async (id: number) => {
+  await axios.delete(`${path}music/${id}/`);
+};
+
 export const getMusicSummary = async (): Promise<MeditationSummaryResponse> => {
   const { data } = await axios.get(`${path}music/summary_stats/`);
   return data;
@@ -133,7 +141,7 @@ export const createAffirmation = async (payload: CreateAudioPayload) => {
   formData.append("title", payload.title);
   formData.append("category", String(payload.category));
   if (payload.media_file) {
-    formData.append("media_file", payload.media_file);
+    formData.append("audio_file", payload.media_file);
   }
   if (payload.affirmation_text) {
     formData.append("text", payload.affirmation_text);
@@ -162,7 +170,7 @@ export const editAffirmation = async (
   formData.append("title", payload.title);
   formData.append("category", String(payload.category));
   if (payload.media_file) {
-    formData.append("media_file", payload.media_file);
+    formData.append("audio_file", payload.media_file);
   }
   if (payload.affirmation_text) {
     formData.append("text", payload.affirmation_text);
@@ -173,6 +181,15 @@ export const editAffirmation = async (
   formData.append("status", payload.status);
 
   const { data } = await axios.patch(`${path}affirmations/${id}/`, formData);
+  return data;
+};
+
+export const deleteAffirmation = async (id: number) => {
+  await axios.delete(`${path}affirmations/${id}/`);
+}
+
+export const getAffirmationSummary = async (): Promise<MeditationSummaryResponse> => {
+  const { data } = await axios.get(`${path}affirmations/summary_stats/`);
   return data;
 };
 

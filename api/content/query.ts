@@ -1,11 +1,18 @@
 import { CreateAudioPayload } from "@/typesorinterface/content";
-import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  createAffirmation,
   createAudioMeditation,
   createCategory,
   createMusic,
+  deleteAffirmation,
+  deleteAudioMeditation,
+  deleteMusic,
+  editAffirmation,
   editAudioMeditation,
   editMusic,
+  getAffirmations,
+  getAffirmationSummary,
   getCategories,
   getMeditation,
   getMeditationSummary,
@@ -39,6 +46,12 @@ export const useEditMeditationMutation = () => {
   });
 };
 
+export const useDeleteMeditationMutation = () => {
+  return useMutation({
+    mutationFn: (id: number) => deleteAudioMeditation(id),
+  });
+}
+
 export const useGetMeditationSummaryQuery = () => {
   return useQuery({
     queryKey: ["meditationSummary"],
@@ -71,6 +84,12 @@ export const useEditMusicMutation = () => {
   });
 };
 
+export const useDeleteMusicMutation = () => {
+  return useMutation({
+    mutationFn: (id: number) => deleteMusic(id),
+  });
+}
+
 export const useGetMusicSummaryQuery = () => {
   return useQuery({
     queryKey: ["musicSummary"],
@@ -83,6 +102,51 @@ export const useCreateCategoryMutation = () => {
     mutationFn: (name: string) => createCategory(name),
   });
 };
+
+// AFFIRMATIONS //
+export const useCreateAffirmationMutation = () => {
+  const { invalidateQueries } = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateAudioPayload) => createAffirmation(payload),
+    onSuccess: () => {
+      invalidateQueries({ queryKey: ["affirmations"] });
+    }
+  });
+}
+
+export const useGetAffirmationQuery = (params: MusicParam) => {
+  return useQuery({
+    queryKey: ["affirmations", params],
+    queryFn: () => getAffirmations(params),
+  });
+}
+
+export const useEditAffirmationMutation = () => {
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number;
+      payload: CreateAudioPayload;
+    }) => editAffirmation(id, payload),
+  });
+}
+
+export const useDeleteAffirmationMutation = () => {
+  return useMutation({
+    mutationFn: (id: number) => deleteAffirmation(id),
+  });
+}
+
+export const useGetAffirmationSummaryQuery = () => {
+  return useQuery({
+    queryKey: ["affirmationSummary"],
+    queryFn: () => getAffirmationSummary(),
+  });
+}
+
+// CATEGORIES //
 
 export const useGetCategoriesQuery = () => {
   const query = useInfiniteQuery({

@@ -1,3 +1,4 @@
+'use client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Heading } from "@/webcomponent/reusable";
 import { LineChart } from "./LineChart";
@@ -5,64 +6,66 @@ import { PieChartComponent } from "./PieChartComponent";
 import { BarChartComponent } from "./BarChartComponent";
 import { cn } from "@/lib/utils";
 import { Clock, Crown, UserPlus, Users, Activity } from "lucide-react";
+import { useGetDashboardStatsQuery } from "@/api/auth";
 
-const quickInsights = [
+
+
+export const DashboardOverview = () => {
+  const { data: dashboardStats, isLoading } = useGetDashboardStatsQuery();
+  const quickInsights = [
   {
     title: "Most Played Meditation",
-    highlight: "Deep Sleep Journey",
-    subtitle: "2,340 plays this week",
+    highlight: dashboardStats?.data?.insights?.most_played_meditation?.title,
+    subtitle: `${dashboardStats?.data?.insights?.most_played_meditation?.count} plays this week`,
   },
   {
     title: "Highest Streak",
-    highlight: "127 Days",
-    subtitle: "Achieved by Sarah M.",
+    highlight: dashboardStats?.data?.insights?.highest_streak?.name,
+    subtitle: `Achieved by ${dashboardStats?.data?.insights?.highest_streak?.name}`,
   },
   {
     title: "Popular Affirmation",
-    highlight: "Self-Love & Confidence",
-    subtitle: "1,890 users favorite this month",
+    highlight: dashboardStats?.data?.insights?.popular_affirmation?.text,
+    subtitle: `${dashboardStats?.data?.insights?.popular_affirmation?.count} users favorite this month`,
   },
 ];
 
 const statsData = [
   {
     title: "Total Active Users",
-    value: "16,300",
-    trend: "+12% this month",
-    trendType: "positive",
+    value: dashboardStats?.data?.kpis?.total_users ?? 0,
     icon: Users,
   },
   {
     title: "New Users Today",
-    value: "342",
-    trend: "+8% from yesterday",
-    trendType: "positive",
+    value: dashboardStats?.data?.kpis?.new_users_today ?? 0,
     icon: UserPlus,
   },
   {
     title: "Premium Subscribers",
-    value: "3,800",
-    trend: "23% conversion",
-    trendType: "info",
+    value: dashboardStats?.data?.kpis?.premium_subscribers ?? 0,
     icon: Crown,
   },
   {
     title: "Sessions Today",
-    value: "8,420",
-    trend: "-15% decrease",
-    trendType: "negative",
+    value: dashboardStats?.data?.kpis?.sessions_today ?? 0,
     icon: Activity,
   },
-  {
-    title: "Peak Activity",
-    value: "8:00 PM",
-    trend: "Evening meditation",
-    trendType: "info",
-    icon: Clock,
-  },
+  
 ];
 
-export const DashboardOverview = () => {
+const userDistributionData = [
+  {
+    name: "Free Users",
+    value: dashboardStats?.data?.distribution?.free_users_percent ?? 0,
+    color: "#D4915D",
+  },
+  {
+    name: "Premium Users",
+    value: dashboardStats?.data?.distribution?.premium_users_percent ?? 0,
+    color: "#D4AF37",
+  },
+];
   return (
     <div className="flex flex-col gap-6 py-16">
       <Heading
@@ -70,7 +73,7 @@ export const DashboardOverview = () => {
         subtitle="Welcome back! Here's what's happening with Zenzi Wellness today."
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 p-4 bg-slate-50/50">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 p-4 bg-slate-50/50">
         {statsData.map((stat, index) => {
           const Icon = stat.icon;
 
@@ -84,16 +87,7 @@ export const DashboardOverview = () => {
                   <h3 className="text-2xl font-bold tracking-tight">
                     {stat.value}
                   </h3>
-                  <p
-                    className={cn(
-                      "text-xs font-medium",
-                      stat.trendType === "positive" && "text-green-600",
-                      stat.trendType === "negative" && "text-red-500",
-                      stat.trendType === "info" && "text-indigo-600"
-                    )}
-                  >
-                    {stat.trend}
-                  </p>
+              
                 </div>
 
                 <div className="p-3 rounded-full bg-[#D4915D]/10 text-[#D4915D]">
@@ -108,15 +102,15 @@ export const DashboardOverview = () => {
       <div className="flex items-stretch gap-3.5 w-full ">
         <Card className="md:w-[70%]">
           {" "}
-          <LineChart />
+          <LineChart revenueData={dashboardStats?.data?.charts?.revenue_monthly || []} />
         </Card>
 
         <Card className="md:w-[30%]">
-          <PieChartComponent />
+          <PieChartComponent userDistributionData={userDistributionData} />
         </Card>
       </div>
       <Card className="w-full">
-        <BarChartComponent />
+        <BarChartComponent dailyActiveUsersData={dashboardStats?.data?.charts?.dau_weekly || []} />
       </Card>
       <div className="grid md:grid-cols-3 sm:grid-cols-2 gap-3.5">
         {quickInsights.map((insight, index) => (

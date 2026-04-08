@@ -3,11 +3,14 @@ import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Cell, Pie, ResponsiveContainer, Tooltip } from "recharts";
 import { PieChart } from "recharts";
 
-const userDistributionData = [
-  { name: "Free Users", value: 77, color: "#D4915D" },
-  { name: "Premium Users", value: 23, color: "#D4AF37" },
-];
-export const PieChartComponent = () => {
+interface UserDistributionData {
+  name: string;
+  value: number;
+  color: string;
+}
+
+
+export const PieChartComponent = ({ userDistributionData }: { userDistributionData: UserDistributionData[] }) => {
   return (
     <>
       <CardHeader>

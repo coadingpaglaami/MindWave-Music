@@ -15,32 +15,42 @@ import {
 } from "@/webcomponent/reusable";
 import { useState } from "react";
 import { UserTable } from "./UserTable";
+import { useGetUsersQuery, useGetUserSummaryQuery } from "@/api/auth";
+import { UsersListData } from "@/typesorinterface/auth";
 
-const data: CardComponentProps[] = [
-  {
-    title: "Total Users",
-    value: "16,250",
-  },
-  {
-    title: "Active Users",
-    value: "15,100",
-  },
-  {
-    title: "Premium Users",
-    value: "3800",
-  },
-  {
-    title: "New This Month",
-    value: "1,200",
-  },
-];
+
 
 export const UserManagement = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | "All">("All");
   const options = ["All", "Active", "Disabled"];
-  console.log(statusFilter)
-  console.log(search)
+  const { data: usersData, isLoading } = useGetUsersQuery({
+    page: 1,
+    search: search,
+    isActive: statusFilter === "Active" ? true : statusFilter === "Disabled" ? false : undefined,
+  });
+  const { data: userSummaryData, isLoading: isUserSummaryLoading } = useGetUserSummaryQuery();
+  console.log(usersData?.data);
+  console.log(statusFilter);
+  console.log(search);
+  const data: CardComponentProps[] = [
+  {
+    title: "Total Users",
+    value: userSummaryData?.data?.total_users ?? 0,
+  },
+  {
+    title: "Active Users",
+    value: userSummaryData?.data?.active_users ?? 0,
+  },
+  {
+    title: "Premium Users",
+    value: userSummaryData?.data?.premium_users ?? 0,
+  },
+  {
+    title: "New This Month",
+    value: userSummaryData?.data?.new_this_month ?? 0,
+  },
+];
   return (
     <div className="py-16 flex flex-col gap-6">
       <Heading
@@ -72,7 +82,9 @@ export const UserManagement = () => {
           </SelectContent>
         </Select>
       </Card>
-      <UserTable search={search} statusFilter={statusFilter} />
+    {usersData?.data===undefined ? <div>
+      Loading.. 
+      </div> : <UserTable data={usersData?.data as UsersListData} />}
     </div>
   );
 };

@@ -1,6 +1,13 @@
 import { Heading, Pagination } from "@/webcomponent/reusable";
 import { generatedUserData as userData } from "./data";
-import { Ban, Calendar, CheckCircle, Crown, Eye, TrendingUp } from "lucide-react";
+import {
+  Ban,
+  Calendar,
+  CheckCircle,
+  Crown,
+  Eye,
+  TrendingUp,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -20,38 +27,19 @@ import {
   DialogHeader,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { UsersListData } from "@/typesorinterface/auth";
+import { format } from "date-fns";
+import { useToggleUserStatusMutation } from "@/api/auth";
+import { toast } from "sonner";
 
-interface UserTableProps {
-  search: string;
-  statusFilter: string | "All";
-}
-
-export const UserTable = ({ search, statusFilter }: UserTableProps) => {
+export const UserTable = ({ data }: { data: UsersListData }) => {
   const [page, setPage] = useState(1);
   const [openDialog, setOpenDialog] = useState(false);
   const rowsPerPage = 12;
+  const { mutateAsync: toggleUserStatusMutation,isPending } =
+    useToggleUserStatusMutation();
 
-  useEffect(() => {
-    Promise.resolve().then(() => setPage(1));
-  }, [search, statusFilter]);
-
-  const filteredData = userData.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase());
-
-    const matchesStatus =
-      statusFilter === "All" || user.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-
-  const paginatedData = filteredData.slice(
-    (page - 1) * rowsPerPage,
-    page * rowsPerPage
-  );
+  const totalPages = Math.ceil(data.count / rowsPerPage);
 
   // Generate initials from name
   const getInitials = (name: string) => {
@@ -71,7 +59,9 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
         <Table className="overflow-x-auto">
           <TableHeader style={{ backgroundColor: "#E8DED04D" }}>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="text-[#6D4C41] font-medium " >User</TableHead>
+              <TableHead className="text-[#6D4C41] font-medium ">
+                User
+              </TableHead>
               <TableHead className="text-[#6D4C41] font-medium">
                 Email
               </TableHead>
@@ -97,7 +87,7 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
           </TableHeader>
 
           <TableBody>
-            {paginatedData.map((user) => (
+            {data.results.map((user) => (
               <TableRow key={user.id} className="hover:bg-muted/30">
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-3">
@@ -115,7 +105,7 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
                 </TableCell>
                 <TableCell className="text-[#6D4C41]">{user.email}</TableCell>
                 <TableCell>
-                  {user.accountType === "Premium" ? (
+                  {user.account_type === "Premium" ? (
                     <Badge className="bg-[#D4915D] text-white border-[#D4915D] hover:bg-[#D4915D]/90">
                       <Crown className="h-3 w-3 mr-1" />
                       Premium
@@ -125,22 +115,24 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
                   )}
                 </TableCell>
                 <TableCell className="text-[#D4915D] font-medium">
-                  {user.steak} days
+                  {user.streak} days
                 </TableCell>
-                <TableCell className="text-[#6D4C41]">{user.session}</TableCell>
                 <TableCell className="text-[#6D4C41]">
-                  {user.joinDate}
+                  {user.sessions}
+                </TableCell>
+                <TableCell className="text-[#6D4C41]">
+                  {format(new Date(user.created_at), "MMM dd, yyyy")}
                 </TableCell>
                 <TableCell>
                   <Badge
-                    variant={user.status === "Active" ? "default" : "outline"}
+                    variant={user.is_active === true ? "default" : "outline"}
                     className={
-                      user.status === "Active"
+                      user.is_active === true
                         ? "bg-[#D4915D] text-white border-[#D4915D]"
                         : ""
                     }
                   >
-                    {user.status}
+                    {user.is_active ? "Active" : "Inactive"}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
@@ -153,7 +145,7 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
                         aria-label={`View details for ${user.name}`}
                         className="float-left"
                       >
-                        Viw Details
+                        View Details
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
@@ -177,16 +169,16 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
                               <span className="text-[10px]">
                                 <Crown className="w-4 h-4" />
                               </span>{" "}
-                              {user.accountType}
+                              {user.account_type}
                             </span>
                             <span
                               className={`px-3 py-0.5 rounded-full text-white text-xs ${
-                                user.status === "Active"
+                                user.is_active === true
                                   ? "bg-[#D69664]"
                                   : "bg-gray-400"
                               }`}
                             >
-                              {user.status}
+                              {user.is_active ? "Active" : "Inactive"}
                             </span>
                           </div>
                         </div>
@@ -198,7 +190,7 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
                             <TrendingUp size={14} /> Current Streak
                           </div>
                           <p className="text-base font-medium">
-                            {user.steak} days
+                            {user.streak} days
                           </p>
                         </div>
                         <div className="bg-white p-4 rounded-xl border border-[#F0E6DD] space-y-4">
@@ -206,7 +198,7 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
                             <CheckCircle size={14} /> Total Sessions
                           </div>
                           <p className="text-base font-medium">
-                            {user.session}
+                            {user.sessions}
                           </p>
                         </div>
                         <div className="bg-white p-4 rounded-xl border border-[#F0E6DD] space-y-4">
@@ -214,8 +206,7 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
                             <Calendar size={14} /> Member Since
                           </div>
                           <p className="text-base font-medium">
-                            {user.joinDate.split(",")[0].split(" ")[0]}{" "}
-                            {user.joinDate.split(",")[1]?.trim() || "2024"}
+                            {format(new Date(user.created_at), "MMM dd, yyyy")}
                           </p>
                         </div>
                       </div>
@@ -230,7 +221,7 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
                               Plan
                             </p>
                             <p className="text-sm font-medium">
-                              {user.plan} Annual
+                              {user.account_type}
                             </p>
                           </div>
                           <div className="text-right">
@@ -238,7 +229,7 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
                               Status
                             </p>
                             <p className="text-sm font-medium text-[#D69664]">
-                              {user.status}
+                              {user.is_active ? "Active" : "Inactive"}
                             </p>
                           </div>
                           <div>
@@ -246,7 +237,7 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
                               Next Billing
                             </p>
                             <p className="text-sm font-medium">
-                              {user.nextBillingDate || "N/A"}
+                              {user.account_type || "N/A"}
                             </p>
                           </div>
                           <div className="text-right">
@@ -254,7 +245,7 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
                               Amount
                             </p>
                             <p className="text-sm font-medium">
-                              ₦{user.amountPerYear.toLocaleString()}/year
+                              ₦{user.sessions.toLocaleString()}/year
                             </p>
                           </div>
                         </div>
@@ -264,7 +255,7 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
                         <h4 className="text-sm font-semibold">
                           Content Engagement
                         </h4>
-                        <div className="bg-white p-5 rounded-xl border border-[#F0E6DD] space-y-5">
+                        {/* <div className="bg-white p-5 rounded-xl border border-[#F0E6DD] space-y-5">
                           {[
                             {
                               label: "Meditation",
@@ -300,13 +291,23 @@ export const UserTable = ({ search, statusFilter }: UserTableProps) => {
                               </div>
                             </div>
                           ))}
-                        </div>
+                        </div> */}
                       </div>
 
                       <DialogFooter>
-                        <button className="w-fit flex items-center gap-2 px-4 py-2 bg-[#D11A3D] text-white text-sm font-medium rounded-lg hover:bg-[#b01633] transition-colors">
+                        <button
+                          className="w-fit flex items-center gap-2 px-4 py-2 bg-[#D11A3D] text-white text-sm font-medium rounded-lg hover:bg-[#b01633] transition-colors"
+                          onClick={async () => {
+                            await toggleUserStatusMutation(user.id);
+                            toast.success(`User has been ${
+                              user.is_active ? "disabled" : "enabled"
+                            } successfully!`);
+                            setOpenDialog(false);
+                          }}
+                          disabled={isPending}
+                        >
                           <Ban size={16} />
-                          Disable User
+                           {user.is_active ? "Disable" : "Enable"} {isPending && "(Updating...)"} User
                         </button>
                       </DialogFooter>
                     </DialogContent>

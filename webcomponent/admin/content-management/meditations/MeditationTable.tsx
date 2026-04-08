@@ -14,11 +14,13 @@ import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import {
   AudioPlayButton,
+  DeleteDialog,
   DialogForm,
   MeditationFormValues,
   Pagination,
 } from "@/webcomponent/reusable";
 import {
+  useDeleteMeditationMutation,
   useEditMeditationMutation,
   useGetMeditationQuery,
 } from "@/api/content";
@@ -38,7 +40,8 @@ export const MeditationTable = () => {
   });
   const rowsPerPage = 10; // Assuming your API returns 10 items per page
   const { mutateAsync: editMeditation } = useEditMeditationMutation();
-
+  const { mutateAsync: deleteMeditation, isPending: isDeleting } =
+    useDeleteMeditationMutation();
   const totalPages = Math.ceil((meditations?.data?.count || 1) / rowsPerPage);
   console.log(
     totalPages,
@@ -78,6 +81,16 @@ export const MeditationTable = () => {
       // Update your data source here
     } catch (error) {
       console.error("Error editing meditation:", error);
+    }
+  };
+  const handleDeleteAffirmation = async (id: number, title: string) => {
+    try {
+      await deleteMeditation(id);
+      toast.success(`Meditation "${title}" deleted successfully!`);
+      refetch(); // Refetch the meditations list to get the updated data
+    } catch (error) {
+      console.error("Failed to delete meditation:", error);
+      toast.error("Failed to delete meditation. Please try again.");
     }
   };
   const [activeAudioId, setActiveAudioId] = useState<string | null>(null);
@@ -159,13 +172,24 @@ export const MeditationTable = () => {
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <DeleteDialog
+                      title="Delete Meditation"
+                      description="This meditation will be permanently removed."
+                      itemName={item?.title || "this meditation"}
+                      onDelete={() =>
+                        handleDeleteAffirmation(item.id, item.title)
+                      }
+                      isDeleting={isDeleting}
+                      trigger={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      }
+                    />
                   </div>
                 </TableCell>
               </TableRow>

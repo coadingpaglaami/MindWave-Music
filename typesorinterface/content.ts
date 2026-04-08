@@ -30,6 +30,10 @@ export interface MeditationItem {
   description: string;
   subtitle?: string;
   media_file: string;
+  audio_file?: string;
+  author_or_source?: string;
+  favourites_count?: number;
+  text?: string;
   status: "PUBLISHED" | "DRAFT" | string;
   plays_count: number;
 }
@@ -46,6 +50,8 @@ export interface MeditationSummary {
   published_items: number;
   total_plays: number;
   avg_plays_per_item: number;
+  total_favorites?: number;
+  most_favorite_affirmation?: string;
 }
 
 export interface MeditationSummaryResponse {

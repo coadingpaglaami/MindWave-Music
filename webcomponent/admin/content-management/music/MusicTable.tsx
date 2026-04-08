@@ -1,10 +1,10 @@
 import {
   AudioPlayButton,
+  DeleteDialog,
   DialogForm,
   MeditationFormValues as MusicFormValues,
   Pagination,
 } from "@/webcomponent/reusable";
-import { MeditationDataProps as MusicProps } from "../meditations";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -16,43 +16,73 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2 } from "lucide-react";
+import { Delete, Edit, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useEditMusicMutation, useGetMusicQuery } from "@/api/content";
+import {
+  useDeleteMusicMutation,
+  useEditMusicMutation,
+  useGetMusicQuery,
+} from "@/api/content";
 import { MeditationItem } from "@/typesorinterface/content";
+import { toast } from "sonner";
 
 export const MusicTable = () => {
   const [page, setPage] = useState(1);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MeditationItem | null>(null);
-  const { data: musicData,isLoading,refetch } = useGetMusicQuery({page: page});
-  const { mutateAsync: editMusic,isPending } = useEditMusicMutation();
+  const {
+    data: musicData,
+    isLoading,
+    refetch,
+  } = useGetMusicQuery({ page: page });
+  const { mutateAsync: editMusic, isPending } = useEditMusicMutation();
+  const { mutateAsync: deleteMusic, isPending: isDeleting } =
+    useDeleteMusicMutation();
   const totalPages = Math.ceil(musicData?.data?.count || 0 / 10);
-  console.log(musicData?.data?.count)
-  console.log(totalPages)
+  console.log(musicData?.data?.count);
+  console.log(totalPages);
 
-    const handleEdit = (item: MeditationItem) => {
+  const handleEdit = (item: MeditationItem) => {
     setEditingItem(item);
     setEditDialogOpen(true);
   };
 
-  const handleSubmit = async(
+  const handleSubmit = async (
     values: MusicFormValues,
-    status: "draft" | "published"
+    status: "draft" | "published",
   ) => {
     // Handle your update logic here
     if (!editingItem) return;
-    editMusic({
-      id: editingItem.id,
-      payload: {
-        title: values.title,
-        category: values.category.id,
-        duration_minutes: values.duration,
-        description: values.description,
-        media_file: values.audioFile,
-        status: status === "draft" ? "DRAFT" : "PUBLISHED",
+    editMusic(
+      {
+        id: editingItem.id,
+        payload: {
+          title: values.title,
+          category: values.category.id,
+          duration_minutes: values.duration,
+          description: values.description,
+          media_file: values.audioFile,
+          status: status === "draft" ? "DRAFT" : "PUBLISHED",
+        },
       },
-    });
+      {
+        onSuccess: () => {
+          toast.success("Music updated successfully!");
+          refetch();
+        },
+      },
+    );
+  };
+
+  const handleDelete = async (id: number, title: string) => {
+    try {
+      await deleteMusic(id);
+      toast.success(`Music "${title}" deleted successfully!`);
+      refetch();
+    } catch (error) {
+      console.error("Failed to delete music:", error);
+      toast.error(`Failed to delete music "${title}". Please try again.`);
+    }
   };
 
   const [activeAudioId, setActiveAudioId] = useState<string | null>(null);
@@ -133,13 +163,22 @@ export const MusicTable = () => {
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <DeleteDialog
+                      title="Delete Music"
+                      description="This music will be permanently removed."
+                      itemName={item.title}
+                      onDelete={() => handleDelete(item.id, item.title)}
+                      isDeleting={isDeleting}
+                      trigger={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      }
+                    />
                   </div>
                 </TableCell>
               </TableRow>

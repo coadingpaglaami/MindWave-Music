@@ -148,11 +148,7 @@ export const AffirmationTableComponent = ({
           type="affirmation"
           initialValues={{
             title: editingItem.title,
-            category: editingItem.category as
-              | "stress relief"
-              | "healing"
-              | "growth"
-              | "relax",
+            // category: editingItem.category, 
             // Convert string to number
             audioUrl: editingItem.audio,
             description: "", // Add if you have it in your data

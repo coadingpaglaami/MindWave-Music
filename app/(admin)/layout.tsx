@@ -1,5 +1,5 @@
 import { TranstackProvider } from "@/provider/TranstackProvider";
-import { NavBar, SideBaar } from "@/webcomponent/ui";
+import { SideBaar } from "@/webcomponent/ui";
 
 export default async function AdminLayOut({
   children,

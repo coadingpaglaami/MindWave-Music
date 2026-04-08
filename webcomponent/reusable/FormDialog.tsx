@@ -29,14 +29,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
 import { useDropzone } from "react-dropzone";
+import { useGetCategoriesQuery } from "@/api/content";
+import { CategoryItem } from "@/typesorinterface/content";
 
 export type MeditationFormValues = {
   title: string;
-  category: "stress relief" | "healing" | "growth" | "relax";
+  category: CategoryItem;
   duration?: number;
   description?: string;
   audioFile?: File;
   affirmationText?: string;
+  text?: string;
 };
 
 interface MeditationDialogProps {
@@ -67,6 +70,8 @@ export const DialogForm: React.FC<MeditationDialogProps> = ({
   const [submitStatus, setSubmitStatus] = useState<"draft" | "published">(
     "draft",
   );
+  const { categegories, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useGetCategoriesQuery();
 
   const isMeditation = type === "meditation";
 
@@ -74,7 +79,11 @@ export const DialogForm: React.FC<MeditationDialogProps> = ({
   const formSchema = z
     .object({
       title: z.string().min(1, "Title is required"),
-      category: z.enum(["stress relief", "healing", "growth", "relax"]),
+      category: z.object({
+        id: z.number(),
+        name: z.string(),
+        slug: z.string(),
+      }),
       duration: isMeditation
         ? z
             .number()
@@ -82,6 +91,9 @@ export const DialogForm: React.FC<MeditationDialogProps> = ({
             .int("Duration must be an integer")
         : z.number().optional(),
       description: z.string().optional(),
+      text: !isMeditation
+        ? z.string().min(1, "Affirmation text is required")
+        : z.string().optional(),
       audioFile: z.instanceof(File).optional(),
       affirmationText: !isMeditation
         ? z.string().min(1, "Affirmation text is required")
@@ -103,12 +115,13 @@ export const DialogForm: React.FC<MeditationDialogProps> = ({
     ) as unknown as Resolver<MeditationFormValues>,
     defaultValues: {
       title: initialValues?.title || "",
-      category: initialValues?.category || "stress relief",
+      category: initialValues?.category,
       duration: isMeditation ? initialValues?.duration || 15 : undefined,
       description: isMeditation ? initialValues?.description || "" : undefined,
       affirmationText: !isMeditation
         ? initialValues?.affirmationText || ""
         : undefined,
+      text: !isMeditation ? initialValues?.text || "" : undefined,
     },
   });
 
@@ -116,7 +129,7 @@ export const DialogForm: React.FC<MeditationDialogProps> = ({
     if (open) {
       form.reset({
         title: initialValues?.title || "",
-        category: initialValues?.category || "stress relief",
+        category: initialValues?.category || undefined,
         duration: isMeditation ? initialValues?.duration || 15 : undefined,
         description: isMeditation
           ? initialValues?.description || ""
@@ -125,6 +138,7 @@ export const DialogForm: React.FC<MeditationDialogProps> = ({
           ? initialValues?.affirmationText || ""
           : undefined,
         audioFile: undefined,
+        text: !isMeditation ? initialValues?.text || "" : undefined,
       });
       setAudioPreview(initialValues?.audioUrl);
     }
@@ -209,19 +223,34 @@ export const DialogForm: React.FC<MeditationDialogProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={(v) => {
+                        const selected = categegories.find(
+                          (c) => c.id === Number(v),
+                        );
+                        if (selected) field.onChange(selected);
+                      }}
+                      value={field.value ? String(field.value.id) : ""}
+                    >
                       <FormControl className="w-full">
                         <SelectTrigger style={{ backgroundColor: "#F5E6D3" }}>
                           <SelectValue placeholder="Select Category" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="stress relief">
-                          Stress Relief
-                        </SelectItem>
-                        <SelectItem value="healing">Healing</SelectItem>
-                        <SelectItem value="growth">Growth</SelectItem>
-                        <SelectItem value="relax">Relax</SelectItem>
+                        {categegories.map((cat) => (
+                          <SelectItem key={cat.id} value={String(cat.id)}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                        {hasNextPage && (
+                          <div
+                            className="text-center text-sm py-2 cursor-pointer"
+                            onClick={() => fetchNextPage()}
+                          >
+                            {isFetchingNextPage ? "Loading..." : "Load more"}
+                          </div>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -267,6 +296,26 @@ export const DialogForm: React.FC<MeditationDialogProps> = ({
                     <FormControl>
                       <Textarea
                         placeholder="Enter your affirmation text..."
+                        style={{ backgroundColor: "#F5E6D3" }}
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            {!isMeditation && (
+              <FormField
+                control={form.control}
+                name="text"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Source </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Enter the source..."
                         style={{ backgroundColor: "#F5E6D3" }}
                         {...field}
                         value={field.value || ""}

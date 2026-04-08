@@ -2,6 +2,7 @@
 import {
   CardComponent,
   CardComponentProps,
+  CategoryCreation,
   DialogForm,
   Heading,
   MeditationFormValues,
@@ -11,38 +12,37 @@ import { MeditationTable } from "./MeditationTable";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { useCreateAudioMeditationMutation } from "@/api/content";
+import {
+  useCreateAudioMeditationMutation,
+  useGetMeditationSummaryQuery,
+} from "@/api/content";
 import { toast } from "sonner";
+import { getMeditationSummary } from "@/api/content/api";
 
 export const Meditations = () => {
   const [openDialog, setOpenDialog] = useState(false);
-  const tableData = generateMeditations(meditationsDataTable, 120);
   const { mutateAsync: createAudioMeditation, isPending } =
     useCreateAudioMeditationMutation();
+  const { data: meditationSummary, isLoading } = useGetMeditationSummaryQuery();
+
   const medicattionsData: CardComponentProps[] = [
     {
       title: "Total Items",
-      value: 4,
+      value: meditationSummary?.data?.total_items || 0,
     },
     {
       title: "Published ",
-      value: 3,
+      value: meditationSummary?.data?.published_items || 0,
     },
     {
       title: "Total Plays",
-      value: 2340,
+      value: meditationSummary?.data?.total_plays || 0,
     },
     {
       title: "Avg Plays/Item",
-      value: 780,
+      value: meditationSummary?.data?.avg_plays_per_item || 0,
     },
   ];
-  const categoryMap = {
-    "stress relief": 0,
-    healing: 1,
-    growth: 2,
-    relax: 3,
-  };
 
   const handleSubmit = async (
     values: MeditationFormValues,
@@ -51,7 +51,7 @@ export const Meditations = () => {
     try {
       await createAudioMeditation({
         title: values.title,
-        category: categoryMap[values.category],
+        category: Number(values.category.id),
         duration_minutes: values.duration,
         description: values.description,
         media_file: values.audioFile,
@@ -73,13 +73,16 @@ export const Meditations = () => {
           title="Meditations"
           subtitle="Manage your meditations library"
         />
-        <Button onClick={() => setOpenDialog(true)}>
-          <Plus /> Add Meditation
-        </Button>
+        <div className="flex gap-2 flex-col md:flex-row">
+          <Button onClick={() => setOpenDialog(true)}>
+            <Plus /> Add Meditation
+          </Button>
+          <CategoryCreation />
+        </div>
       </div>
 
       <CardComponent data={medicattionsData} />
-      <MeditationTable data={tableData} />
+      <MeditationTable />
       {openDialog && (
         <DialogForm
           open={openDialog}

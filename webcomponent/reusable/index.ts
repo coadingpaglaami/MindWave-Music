@@ -4,3 +4,4 @@ export * from './Pagination';
 export * from './AudioPlayButton';
 export * from './FormDialog';
 export * from './SearchBar';
+export * from './CategoryCreation';

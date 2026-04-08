@@ -1,6 +1,5 @@
 "use client";
 import { Card, CardContent } from "@/components/ui/card";
-import { MeditationDataProps } from "./data";
 import {
   Table,
   TableBody,
@@ -19,32 +18,67 @@ import {
   MeditationFormValues,
   Pagination,
 } from "@/webcomponent/reusable";
+import {
+  useEditMeditationMutation,
+  useGetMeditationQuery,
+} from "@/api/content";
+import { MeditationItem } from "@/typesorinterface/content";
+import { toast } from "sonner";
 
-export const MeditationTable = ({ data }: { data: MeditationDataProps[] }) => {
+export const MeditationTable = () => {
   const [page, setPage] = useState(1);
-  const rowsPerPage = 10;
-  const totalPages = Math.ceil(data.length / rowsPerPage);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<MeditationDataProps | null>(
-    null
-  );
-  const paginatedData = data.slice(
-    (page - 1) * rowsPerPage,
-    page * rowsPerPage
+  const [editingItem, setEditingItem] = useState<MeditationItem | null>(null);
+  const {
+    data: meditations,
+    isLoading,
+    refetch,
+  } = useGetMeditationQuery({
+    page: page,
+  });
+  const rowsPerPage = 10; // Assuming your API returns 10 items per page
+  const { mutateAsync: editMeditation } = useEditMeditationMutation();
+
+  const totalPages = Math.ceil((meditations?.data?.count || 1) / rowsPerPage);
+  console.log(
+    totalPages,
+    "total pages",
+    meditations?.data?.count,
+    "Meditation Count",
   );
 
-  const handleEdit = (item: MeditationDataProps) => {
+  const handleEdit = (item: MeditationItem) => {
     setEditingItem(item);
     setEditDialogOpen(true);
   };
 
   const handleSubmit = (
     values: MeditationFormValues,
-    status: "draft" | "published"
+    status: "draft" | "published",
   ) => {
     // Handle your update logic here
-    console.log("Updated values:", values, status);
-    // Update your data source here
+    if (!editingItem) return;
+
+    try {
+      editMeditation({
+        id: editingItem.id,
+        payload: {
+          title: values.title,
+          category: Number(values.category.id),
+          duration_minutes: values.duration,
+          description: values.description,
+          media_file: values.audioFile,
+          status: status === "draft" ? "DRAFT" : "PUBLISHED",
+        },
+      });
+      refetch(); // Refetch the meditations list to get the updated data
+      toast.success("Meditation updated successfully!");
+      // Optionally, you can refetch the meditations list here to get the updated data
+      // refetchMeditations(); // Uncomment if you have a refetch function from your query
+      // Update your data source here
+    } catch (error) {
+      console.error("Error editing meditation:", error);
+    }
   };
   const [activeAudioId, setActiveAudioId] = useState<string | null>(null);
 
@@ -76,13 +110,13 @@ export const MeditationTable = ({ data }: { data: MeditationDataProps[] }) => {
           </TableHeader>
 
           <TableBody>
-            {paginatedData.map((item, index) => (
+            {meditations?.data?.results.map((item, index) => (
               <TableRow key={index} className="hover:bg-muted/30">
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-3">
                     <AudioPlayButton
-                      id={item.audio}
-                      src={item.audio}
+                      id={item.media_file}
+                      src={item.media_file}
                       size={30}
                       activeId={activeAudioId}
                       onPlayRequest={setActiveAudioId}
@@ -92,11 +126,11 @@ export const MeditationTable = ({ data }: { data: MeditationDataProps[] }) => {
                 </TableCell>
                 <TableCell>
                   <Badge variant="secondary" className="bg-muted">
-                    {item.category}
+                    {item.category.name}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {item.duration}
+                  {item.duration_minutes} min
                 </TableCell>
                 <TableCell>
                   <Badge
@@ -113,7 +147,7 @@ export const MeditationTable = ({ data }: { data: MeditationDataProps[] }) => {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right font-medium">
-                  {item.plays.toLocaleString()}
+                  {item.plays_count.toLocaleString()}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
@@ -147,14 +181,10 @@ export const MeditationTable = ({ data }: { data: MeditationDataProps[] }) => {
           subtitle="Update your meditation details"
           initialValues={{
             title: editingItem.title,
-            category: editingItem.category as
-              | "stress relief"
-              | "healing"
-              | "growth"
-              | "relax",
-            duration: parseInt(editingItem.duration), // Convert string to number
-            audioUrl: editingItem.audio,
-            description: "", // Add if you have it in your data
+            category: editingItem.category,
+            duration: editingItem.duration_minutes, // Convert string to number
+            audioUrl: editingItem.media_file,
+            description: editingItem.description, // Add if you have it in your data
           }}
           onSubmit={handleSubmit}
         />

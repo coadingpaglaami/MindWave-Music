@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   CardComponent,
   CardComponentProps,
+  CategoryCreation,
   DialogForm,
   Heading,
 } from "@/webcomponent/reusable";
@@ -40,9 +41,12 @@ export const Affirmations = () => {
           title="Affirmations"
           subtitle="Manage your affirmations library"
         />
-        <Button onClick={() => setOpenDialog(true)}>
-          <Plus /> Add Affirmation
-        </Button>
+        <div className="flex gap-2 flex-col md:flex-row">
+          <Button onClick={() => setOpenDialog(true)}>
+            <Plus /> Add Affirmation
+          </Button>
+          <CategoryCreation />
+        </div>
       </div>
       <CardComponent data={musicData} />
       <AffirmationTableComponent data={moreTableData} />

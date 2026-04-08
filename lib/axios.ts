@@ -18,41 +18,55 @@ api.interceptors.request.use((config) => {
       config.headers.Authorization = `Bearer ${token}`;
     }
   }
+
   return config;
 });
 
 api.interceptors.response.use(
   (response) => response,
+
   async (error) => {
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
+
       try {
         const refreshToken = getRefreshToken();
 
+        if (!refreshToken) {
+          clearTokens();
+          window.location.href = "/login";
+          return Promise.reject(error);
+        }
+
         const res = await axios.post(
           `${process.env.NEXT_PUBLIC_API_URL}/accounts/token/refresh/`,
-          {
-            refresh: refreshToken,
-          },
+          { refresh: refreshToken }
         );
-        const newAccessToken = res.data.access;
-        const newRefreshToken = res.data.refresh;
-        setTokens(newAccessToken, newRefreshToken);
 
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        const { access, refresh } = res.data;
+
+        setTokens(access, refresh);
+
+        originalRequest.headers.Authorization = `Bearer ${access}`;
+
         return api(originalRequest);
-      } catch (error) {
-        console.log("Refresh Failed");
+      } catch (err) {
+        console.log("Refresh token failed");
+
         clearTokens();
-        if (typeof window != undefined) {
+
+        if (typeof window !== "undefined") {
           window.location.href = "/login";
         }
 
-        return Promise.reject(error);
+        return Promise.reject(err);
       }
     }
-  },
+
+    return Promise.reject(error);
+  }
 );
+
 export { api as axios };

@@ -14,7 +14,7 @@ export interface LoginResponse {
   success: boolean;
   message: string;
   data: LoginData;
-//   errors: any | null;
+  //   errors: any | null;
 }
 
 export interface User {
@@ -47,4 +47,33 @@ export interface UserStatsResponse {
   message: string;
   data: UserStats;
   errors: null;
+}
+
+export interface AdminProfile {
+  id: number;
+  name: string;
+  email: string;
+  avatar: string | null;
+  account_type: string;
+  last_login: string | null;
+  created_at: string;
+}
+
+export interface AdminProfileResponse {
+  success: boolean;
+  message: string;
+  data: AdminProfile;
+  errors: null;
+}
+
+export interface AdminProfileUpdatePayload {
+  name: string;
+  email: string;
+  avatar: File | null;
+}
+
+export interface UpdateAdminPasswordPayload {
+  current_password: string;
+  new_password: string;
+  confirm_new_password: string;
 }

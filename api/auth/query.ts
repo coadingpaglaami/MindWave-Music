@@ -1,11 +1,19 @@
-import { LoginResponse } from "@/typesorinterface/auth";
+import {
+  AdminProfileUpdatePayload,
+  LoginResponse,
+  UpdateAdminPasswordPayload,
+} from "@/typesorinterface/auth";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  AdminPasswordChange,
+  getAdminProfile,
   getDashboardStats,
   getUsers,
   getUserSummary,
   Login,
   toggleUserStatus,
+  updateAdminProfile,
+  useLogOut as logOut,
   UserParams,
 } from "./api";
 
@@ -51,5 +59,35 @@ export const useGetDashboardStatsQuery = () => {
   return useQuery({
     queryKey: ["dashboardStats"],
     queryFn: () => getDashboardStats(),
+  });
+};
+
+export const useGetAdminProfileQuery = () => {
+  return useQuery({
+    queryKey: ["adminProfile"],
+    queryFn: () => getAdminProfile(),
+  });
+};
+
+export const useUpdateAdminProfileMutation = () => {
+  return useMutation({
+    mutationKey: ["updateAdminProfile"],
+    mutationFn: (payload: Partial<AdminProfileUpdatePayload>) =>
+      updateAdminProfile(payload),
+  });
+};
+
+export const useAdminPasswordChangeMutation = () => {
+  return useMutation({
+    mutationKey: ["adminPasswordChange"],
+    mutationFn: (payload: UpdateAdminPasswordPayload) =>
+      AdminPasswordChange(payload),
+  });
+}
+
+export const useAdminLogOutAllDevicesMutation = () => {
+  return useMutation({
+    mutationKey: ["adminLogOutAllDevices"],
+    mutationFn: () => logOut(),
   });
 }

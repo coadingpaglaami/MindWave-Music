@@ -1,12 +1,32 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, AlertTriangle } from "lucide-react";
+import { Upload, AlertTriangle, Loader2 } from "lucide-react";
 import { z } from "zod";
+import {
+  useAdminLogOutAllDevicesMutation,
+  useAdminPasswordChangeMutation,
+  useGetAdminProfileQuery,
+  useUpdateAdminProfileMutation,
+} from "@/api/auth";
+import { toast } from "sonner";
+import { AdminProfileUpdatePayload } from "@/typesorinterface/auth";
+import { clearTokens } from "@/lib/cookies";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useRouter } from "next/navigation";
 
 // Zod schemas
 const profileSchema = z.object({
@@ -47,8 +67,8 @@ interface FormErrors {
 
 export const AdminProfile = () => {
   const [profileData, setProfileData] = useState<ProfileData>({
-    fullName: "Admin User",
-    email: "admin@aerobiwellness.com",
+    fullName: "",
+    email: "",
     photo: null,
     photoPreview: null,
   });
@@ -62,15 +82,58 @@ export const AdminProfile = () => {
   const [profileErrors, setProfileErrors] = useState<FormErrors>({});
   const [passwordErrors, setPasswordErrors] = useState<FormErrors>({});
   const [isProfileChanged, setIsProfileChanged] = useState(false);
+  const [isSignOutDialogOpen, setIsSignOutDialogOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const {push} =useRouter()
 
+  const {
+    data: adminProfileData,
+    isLoading,
+    refetch,
+  } = useGetAdminProfileQuery();
+  const { mutateAsync: updateProfile, isPending: isUpdateProfilePending } =
+    useUpdateAdminProfileMutation();
+  const { mutateAsync: changePassword, isPending: isPasswordChangePending } =
+    useAdminPasswordChangeMutation();
+  const {
+    mutateAsync: logOutAllDevices,
+  } = useAdminLogOutAllDevicesMutation();
+
+  // Load profile data when component mounts or data is fetched
+  useEffect(() => {
+    if (adminProfileData?.data) {
+      const profile = adminProfileData.data;
+      setProfileData({
+        fullName: profile.name,
+        email: profile.email,
+        photo: null,
+        photoPreview: profile.avatar || null,
+      });
+    }
+  }, [adminProfileData]);
+
+  // Track initial profile data for change detection
   const initialProfileData = {
-    fullName: "Admin User",
-    email: "admin@aerobiwellness.com",
+    fullName: adminProfileData?.data?.name || "",
+    email: adminProfileData?.data?.email || "",
+    photoPreview: adminProfileData?.data?.avatar || null,
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size should be less than 5MB");
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please upload an image file");
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfileData((prev) => ({
@@ -89,7 +152,7 @@ export const AdminProfile = () => {
     setProfileErrors((prev) => ({ ...prev, [field]: undefined }));
     setIsProfileChanged(
       value !== initialProfileData[field as keyof typeof initialProfileData] ||
-        profileData.photo !== null
+        profileData.photo !== null,
     );
   };
 
@@ -98,14 +161,39 @@ export const AdminProfile = () => {
     setPasswordErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-  const handleProfileSave = () => {
+  const handleProfileSave = async () => {
     try {
+      // Validate with zod
       profileSchema.parse(profileData);
       setProfileErrors({});
-      console.log("Profile saved:", profileData);
-      setIsProfileChanged(false);
-      alert("Profile changes saved successfully!");
-    } catch (error) {
+
+      // Create FormData object for file upload
+      const formData = new FormData();
+
+      // Add text fields
+      formData.append("name", profileData.fullName);
+      formData.append("email", profileData.email);
+
+      // Only append avatar if a new file was uploaded
+      if (profileData.photo) {
+        formData.append("avatar", profileData.photo);
+      }
+
+      // Call API with FormData
+      const response = await updateProfile(
+        formData as unknown as Partial<AdminProfileUpdatePayload>,
+      );
+
+      if (response?.success) {
+        toast.success("Profile updated successfully!");
+        setIsProfileChanged(false);
+        setProfileData((prev) => ({ ...prev, photo: null })); // Clear the pending photo
+        // Refetch profile data to get updated info
+        await refetch();
+      } else {
+        toast.error(response?.message || "Failed to update profile");
+      }
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         const errors: FormErrors = {};
         error.issues.forEach((err) => {
@@ -114,22 +202,45 @@ export const AdminProfile = () => {
           }
         });
         setProfileErrors(errors);
+      } else {
+        // Handle API error response
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.message ||
+          "An error occurred while updating profile";
+        toast.error(errorMessage);
+        console.error("Profile update error:", error);
       }
     }
   };
 
-  const handlePasswordUpdate = () => {
+  const handlePasswordUpdate = async () => {
     try {
+      // Validate with zod
       passwordSchema.parse(passwordData);
       setPasswordErrors({});
-      console.log("Password updated");
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-      alert("Password updated successfully!");
-    } catch (error) {
+
+      // Prepare payload
+      const payload = {
+        current_password: passwordData.currentPassword,
+        new_password: passwordData.newPassword,
+        confirm_new_password: passwordData.confirmPassword,
+      };
+
+      // Call API
+      const response = await changePassword(payload);
+
+      if (response?.success) {
+        toast.success("Password updated successfully!");
+        setPasswordData({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      } else {
+        toast.error(response?.message || "Failed to update password");
+      }
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         const errors: FormErrors = {};
         error.issues.forEach((err) => {
@@ -138,16 +249,47 @@ export const AdminProfile = () => {
           }
         });
         setPasswordErrors(errors);
+      } else {
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.message ||
+          "An error occurred while updating password";
+        toast.error(errorMessage);
+        console.error("Password update error:", error);
       }
     }
   };
 
-  const handleSignOut = () => {
-    if (confirm("Are you sure you want to sign out of all devices?")) {
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      // Replace with your actual logout API call
+      // await logOutAllDevices();
+      setIsSignOutDialogOpen(false);
+      logOutAllDevices();
+      toast.success("Signed out of all devices successfully");
+      push('/login');
+
+      clearTokens();
       console.log("Signing out of all devices...");
-      alert("Signed out of all devices");
+
+      // Optional: Redirect to login page after sign out
+      // router.push('/login');
+    } catch (error) {
+      toast.error("Failed to sign out of all devices");
+      console.error("Sign out error:", error);
+    } finally {
+      setIsSigningOut(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-orange-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -169,7 +311,14 @@ export const AdminProfile = () => {
                   <AvatarImage src={profileData.photoPreview} alt="Profile" />
                 ) : (
                   <AvatarFallback className="bg-orange-400 text-white text-2xl">
-                    AU
+                    {profileData.fullName
+                      ? profileData.fullName
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2)
+                      : "AU"}
                   </AvatarFallback>
                 )}
               </Avatar>
@@ -220,10 +369,17 @@ export const AdminProfile = () => {
           <div className="flex justify-end">
             <Button
               onClick={handleProfileSave}
-              disabled={!isProfileChanged}
+              disabled={!isProfileChanged || isUpdateProfilePending}
               className="bg-orange-400 hover:bg-orange-500"
             >
-              Save Changes
+              {isUpdateProfilePending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
             </Button>
           </div>
         </CardContent>
@@ -295,9 +451,17 @@ export const AdminProfile = () => {
           <div className="flex justify-end">
             <Button
               onClick={handlePasswordUpdate}
-              className="bg-orange-300 hover:bg-orange-400 text-gray-700"
+              disabled={isPasswordChangePending}
+              className="bg-orange-400 hover:bg-orange-500"
             >
-              Update Password
+              {isPasswordChangePending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                "Update Password"
+              )}
             </Button>
           </div>
         </CardContent>
@@ -312,15 +476,27 @@ export const AdminProfile = () => {
           <div className="grid grid-cols-2 gap-6">
             <div>
               <p className="text-sm text-gray-500 mb-1">Account Type</p>
-              <p className="font-medium">Super Admin</p>
+              <p className="font-medium">
+                {adminProfileData?.data?.account_type || "Admin"}
+              </p>
             </div>
             <div>
               <p className="text-sm text-gray-500 mb-1">Last Login</p>
-              <p className="font-medium">December 4, 2024 at 9:32 AM</p>
+              <p className="font-medium">
+                {adminProfileData?.data?.last_login
+                  ? new Date(adminProfileData.data.last_login).toLocaleString()
+                  : "Never"}
+              </p>
             </div>
             <div>
               <p className="text-sm text-gray-500 mb-1">Account Created</p>
-              <p className="font-medium">January 1, 2024</p>
+              <p className="font-medium">
+                {adminProfileData?.data?.created_at
+                  ? new Date(
+                      adminProfileData.data.created_at,
+                    ).toLocaleDateString()
+                  : "N/A"}
+              </p>
             </div>
             <div>
               <p className="text-sm text-gray-500 mb-1">Session Status</p>
@@ -353,6 +529,41 @@ export const AdminProfile = () => {
           </Button>
         </CardContent>
       </Card>
+      <Dialog open={isSignOutDialogOpen} onOpenChange={setIsSignOutDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sign out of all devices?</DialogTitle>
+            <DialogDescription>
+              This action will sign you out from all active sessions across all
+              devices. You will need to log in again on each device.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsSignOutDialogOpen(false)}
+              disabled={isSigningOut}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isSigningOut ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing out...
+                </>
+              ) : (
+                "Yes, Sign out"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

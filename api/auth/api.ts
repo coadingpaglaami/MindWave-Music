@@ -1,6 +1,9 @@
 import { axios } from "@/lib/axios";
 import {
+  AdminProfileResponse,
+  AdminProfileUpdatePayload,
   LoginResponse,
+  UpdateAdminPasswordPayload,
   UsersListData,
   UserStatsResponse,
 } from "@/typesorinterface/auth";
@@ -45,3 +48,27 @@ export const getDashboardStats = async (): Promise<DashboardResponse> => {
   const { data } = await axios.get(`${admin_panel}dashboard/`);
   return data;
 };
+
+export const getAdminProfile = async (): Promise<AdminProfileResponse> => {
+  const { data } = await axios.get(`${admin_panel}profile/`);
+  return data;
+};
+
+export const updateAdminProfile = async (
+  payload: Partial<AdminProfileUpdatePayload>,
+) => {
+  const { data } = await axios.patch(`${admin_panel}profile/`, payload);
+  return data;
+};
+
+export const AdminPasswordChange = async (
+  payload: UpdateAdminPasswordPayload,
+) => {
+  const { data } = await axios.post(`accounts/update-password/`, payload);
+  return data;
+};
+
+export const useLogOut = async () => {
+  const { data } = await axios.post(`${admin_panel}profile/logout-all/`);
+  return data;
+}

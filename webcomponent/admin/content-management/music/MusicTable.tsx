@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Delete, Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   useDeleteMusicMutation,
@@ -38,7 +38,7 @@ export const MusicTable = () => {
   const { mutateAsync: editMusic, isPending } = useEditMusicMutation();
   const { mutateAsync: deleteMusic, isPending: isDeleting } =
     useDeleteMusicMutation();
-  const totalPages = Math.ceil(musicData?.data?.count || 0 / 10);
+  const totalPages = Math.ceil((musicData?.data?.count || 0) / 10);
   console.log(musicData?.data?.count);
   console.log(totalPages);
 
